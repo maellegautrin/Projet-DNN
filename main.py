@@ -15,15 +15,17 @@ x = []
 b = []
 W = []
 
+
+
 def init_vars():
     x = [ [ Float(f"x_{j}_{i}") for j in range(s[i]) ] for i in range(n) ]
     y = [ [ Float(f"y_{j}_{i}") for j in range(s[i]) ] for i in range(n) ]
     b = [ [ Float(f"b_{j}_{i}") for j in range(s[i]) ] for i in range(n) ]
-    W = [ [ Float(f"w_{j}_{i}") for j in range(s[i]) ] for i in range(n) ]
+    W = [ [ [Float(f"w_{j}_{i}_{k}") for k in range(s[i-1])] for j in range(s[i]) ] for i in range(1,n) ]
 
 init_vars()
 
-def get_contraint(N,x, L):
+def get_contraint(N,x_star, L,j):
     def eq_layer(x,y)=
         And([x[i] == y[i] for i in range(s[0])])
 
@@ -37,7 +39,7 @@ def get_contraint(N,x, L):
             temp = temp + x[i] * y[i]
 
     def c(i):
-        And([ y[i][j] == matrice_product(W[i][j],x[i - 1]) + b[i][j] for j in range(s[i]) ])
+        And([ y[i][j] == matrice_product(W[i-1][j],x[i - 1]) + b[i][j] for j in range(s[i]) ])
 
 
     def c_prime(i):
@@ -47,7 +49,7 @@ def get_contraint(N,x, L):
         And([  x[n][k] <= x[n][j]  for k in range(s[-1]) if k != j ])
 
     temp = [And(c(i),c_prime(i)) for i in range(1,n+1)]
-    temp.append(c_in(x))
+    temp.append(c_in(x_star))
     temp.append(c_out(L,j))
     And(temp)
 
@@ -67,7 +69,7 @@ def find_epsilon() =
     epsilon = -0.1
     is_sat = false
 
-    solver.add(get_contrain(N,x,L_star))
+    solver.add(get_contrain(N,x,L_star,j))
 
     while !is_sat:
         print(f"test: {epsilon}")
