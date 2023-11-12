@@ -161,10 +161,11 @@ print(f"layers detected : {s}")
 
 def get_contraint(x_var, label):
     def eq_layer(x,y):
-        return And([x[i] == y[i] for i in range(s[0])])
+        for i in range(s[0]):
+            solver.add(x[i] == y[i])
 
     def c_in(x_var):
-        return eq_layer(x_var,x[0])
+        eq_layer(x_var,x[0])
 
     def matrice_product(x,y):
         temp = 0
@@ -173,22 +174,26 @@ def get_contraint(x_var, label):
         return temp
 
     def c(i):
-        print(s[i])
-        return And([ y[i][j] == matrice_product(W[i][j],x[i]) + float(b[i][j]) for j in range(s[i+1]) ])
+        for j in range(s[i+1]):
+            solver.add( y[i][j] == matrice_product(W[i][j],x[i]) + float(b[i][j]))
 
 
     def c_prime(i):
-        return And( [ And(Implies(y[i][j] > 0, x[i][j] == y[i][j]), Implies(y[i][j] <= 0, x[i][j] == 0) )  for j in range(s[i]) ] )
+        for j in range(s[i]):
+            solver.add(Implies(y[i][j] > 0, x[i][j] == y[i][j]), Implies(y[i][j] <= 0, x[i][j] == 0) )
 
     def c_out(label):
         print(label)
         print(len(x[n-1]))
-        return And([ x[n-1][k] <= x[n-1][label] for k in range(s[-1]) if k != label ])
+        for k in range(s[-1]) :
+            if k != label :
+                solver.add(x[n-1][k] <= x[n-1][label])
 
-    temp = [And(c(i),c_prime(i)) for i in range(0,n-1)]
-    temp.append(c_in(x_var))
-    temp.append(c_out(label))
-    return And(temp)
+    for i in range(0,n-1):
+        c(i)
+        c_prime(i)
+    c_in(x_var)
+    c_out(label)
 
 
 
@@ -210,9 +215,11 @@ def find_epsilon(label,x_star) :
 
     x_var = [Real(f"xvar_{i}") for i in range(s[0])]
 
-    solver.add(get_contraint(x_var,label))
+    print("generate contraints")
+    get_contraint(x_var,label)
     solver.push()
 
+    print("find epsilon")
     while not(is_sat):
         epsilon += 0.1
         print(f"test: {epsilon}")
