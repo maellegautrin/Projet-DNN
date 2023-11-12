@@ -152,10 +152,15 @@ W = []
 n = 5
 
 def init_vars():
+    W = []
+    b = []
+    s = []
+    for layer in model.children():
+        W.append(layer.state_dict()['weight'])
+        b.append(layer.state_dict()['bias'])
+        s.append(layer.state_dict()['weight'].size()[1])
     x = [ [ Real(f"x_{j}_{i}") for j in range(s[i]) ] for i in range(n) ]
     y = [ [ Real(f"y_{j}_{i}") for j in range(s[i]) ] for i in range(n) ]
-    b = [ [ Real(f"b_{j}_{i}") for j in range(s[i]) ] for i in range(n) ]
-    W = [ [ [Real(f"w_{j}_{i}_{k}") for k in range(s[i-1])] for j in range(s[i]) ] for i in range(1,n) ]
 
 init_vars()
 
