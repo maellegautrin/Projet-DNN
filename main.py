@@ -107,7 +107,7 @@ transform=transforms.Compose([
         transforms.Normalize((0.1307,), (0.3081,)),
         transforms.Lambda(lambda x: torch.flatten(x))
         ])
-dataset1 = datasets.MNIST('./MNIST', train=True, download=True,
+dataset1 = datasets.MNIST('./MNIST', train=True, download=False,
                     transform=transform)
 dataset2 = datasets.MNIST('./MNIST', train=False,
                     transform=transform)
@@ -149,18 +149,18 @@ x = []
 b = []
 W = []
 
-
+n = 5
 
 def init_vars():
-    x = [ [ Float(f"x_{j}_{i}") for j in range(s[i]) ] for i in range(n) ]
-    y = [ [ Float(f"y_{j}_{i}") for j in range(s[i]) ] for i in range(n) ]
-    b = [ [ Float(f"b_{j}_{i}") for j in range(s[i]) ] for i in range(n) ]
-    W = [ [ [Float(f"w_{j}_{i}_{k}") for k in range(s[i-1])] for j in range(s[i]) ] for i in range(1,n) ]
+    x = [ [ Real(f"x_{j}_{i}") for j in range(s[i]) ] for i in range(n) ]
+    y = [ [ Real(f"y_{j}_{i}") for j in range(s[i]) ] for i in range(n) ]
+    b = [ [ Real(f"b_{j}_{i}") for j in range(s[i]) ] for i in range(n) ]
+    W = [ [ [Real(f"w_{j}_{i}_{k}") for k in range(s[i-1])] for j in range(s[i]) ] for i in range(1,n) ]
 
 init_vars()
 
 def get_contraint(N,x_star, L,j):
-    def eq_layer(x,y)=
+    def eq_layer(x,y):
         And([x[i] == y[i] for i in range(s[0])])
 
 
@@ -194,22 +194,22 @@ def Max(x,y):
 
 def distance(x,y):
     temp = 0
-    for i = 0 in range(len(x)):
+    for i in range(len(x)):
         temp = Max(temp,Abs(x[i] - y[i]))
     temp
 
 
-def find_epsilon() =
+def find_epsilon() :
     epsilon = -0.1
     is_sat = false
 
     solver.add(get_contrain(N,x,L_star,j))
 
-    while !is_sat:
+    while not(is_sat):
         print(f"test: {epsilon}")
         epsilon += 0.1
         solver.add(distance(x_star,x) < epsilon)
         is_sat = solver.sat() == sat
-        if !is_sat:
+        if not(is_sat) :
             solver.pop()
     print(f"find epsilon : {epsilon}")
