@@ -1,3 +1,0 @@
-[submodule "tensorflow-without-a-phd"]
-	path = tensorflow-without-a-phd
-	url = https://github.com/GoogleCloudPlatform/tensorflow-without-a-phd.git
