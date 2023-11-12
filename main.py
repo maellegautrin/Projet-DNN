@@ -123,7 +123,7 @@ print("Training the model...")
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print(f'Using gpu: {torch.cuda.is_available()}')
 model = LinearNet().to(device)
-model.train_model(train_loader, 2, device)
+#model.train_model(train_loader, 2, device)
 
 print("Testing the model...")
 model.test_model(test_loader)
@@ -138,83 +138,110 @@ from z3 import *
 
 solver = Solver()
 
-s = [784,200,100,60,30]
-L = []
 
-layers = []
-layers_after_relu = []
+# Init vars
 
-y = []
-x = []
-b = []
 W = []
+b = []
+s = []
+for layer in model.children():
+    W.append(layer.state_dict()['weight'])
+    b.append(layer.state_dict()['bias'])
+    s.append(layer.state_dict()['weight'].size()[1])
+s.append(10)
+n = len(s)
+x = [ [ Real(f"x_{i}_{j}") for j in range(s[i]) ] for i in range(n) ]
+y = [ [ Real(f"y_{i}_{j}") for j in range(s[i]) ] for i in range(n) ]
 
-n = 5
+print(f"layers detected : {s}")
 
-def init_vars():
-    W = []
-    b = []
-    s = []
-    for layer in model.children():
-        W.append(layer.state_dict()['weight'])
-        b.append(layer.state_dict()['bias'])
-        s.append(layer.state_dict()['weight'].size()[1])
-    x = [ [ Real(f"x_{j}_{i}") for j in range(s[i]) ] for i in range(n) ]
-    y = [ [ Real(f"y_{j}_{i}") for j in range(s[i]) ] for i in range(n) ]
 
-init_vars()
 
-def get_contraint(N,x_star, L,j):
+# Define contraints
+
+def get_contraint(x_var, label):
     def eq_layer(x,y):
-        And([x[i] == y[i] for i in range(s[0])])
+        return And([x[i] == y[i] for i in range(s[0])])
 
-
-    def c_in(x):
-        eq_layer(x,layers[0])
+    def c_in(x_var):
+        return eq_layer(x_var,x[0])
 
     def matrice_product(x,y):
         temp = 0
         for i in range(len(x)):
-            temp = temp + x[i] * y[i]
+            temp = temp + float(x[i]) * y[i]
+        return temp
 
     def c(i):
-        And([ y[i][j] == matrice_product(W[i-1][j],x[i - 1]) + b[i][j] for j in range(s[i]) ])
+        print(s[i])
+        return And([ y[i][j] == matrice_product(W[i][j],x[i]) + float(b[i][j]) for j in range(s[i+1]) ])
 
 
     def c_prime(i):
-        And( [  And(Implies(y[i][j] > 0, x[i][j] == y[i][j]), Implies(y[i][j] <= 0, x[i][j] == 0) )  for j in range(s[i]) ] )
+        return And( [ And(Implies(y[i][j] > 0, x[i][j] == y[i][j]), Implies(y[i][j] <= 0, x[i][j] == 0) )  for j in range(s[i]) ] )
 
-    def c_out(L,j):
-        And([  x[n][k] <= x[n][j]  for k in range(s[-1]) if k != j ])
+    def c_out(label):
+        print(label)
+        print(len(x[n-1]))
+        return And([ x[n-1][k] <= x[n-1][label] for k in range(s[-1]) if k != label ])
 
-    temp = [And(c(i),c_prime(i)) for i in range(1,n+1)]
-    temp.append(c_in(x_star))
-    temp.append(c_out(L,j))
-    And(temp)
+    temp = [And(c(i),c_prime(i)) for i in range(0,n-1)]
+    temp.append(c_in(x_var))
+    temp.append(c_out(label))
+    return And(temp)
 
 
 
 def Max(x,y):
-    If(x > y, x, y)
+    return If(x > y, x, y)
 
 def distance(x,y):
     temp = 0
     for i in range(len(x)):
-        temp = Max(temp,Abs(x[i] - y[i]))
-    temp
+        temp = Max(temp,Abs(float(x[i]) - y[i]))
+    return temp
 
 
-def find_epsilon() :
+def find_epsilon(label,x_star) :
     epsilon = -0.1
-    is_sat = false
+    is_sat = False
 
-    solver.add(get_contrain(N,x,L_star,j))
+
+
+    x_var = [Real(f"xvar_{i}") for i in range(s[0])]
+
+    solver.add(get_contraint(x_var,label))
+    solver.push()
 
     while not(is_sat):
-        print(f"test: {epsilon}")
         epsilon += 0.1
-        solver.add(distance(x_star,x) < epsilon)
-        is_sat = solver.sat() == sat
+        print(f"test: {epsilon}")
+        solver.add(distance(x_star,x_var) < epsilon)
+        is_sat = solver.check() == sat
         if not(is_sat) :
             solver.pop()
     print(f"find epsilon : {epsilon}")
+    return epsilon
+
+def find_second_label(entry):
+    output = model(entry)
+    first = 0
+    second = 0
+    firsti = 0
+    secondi = 0
+    i = 0
+    for l in output:
+        if l > first:
+            second = first
+            secondi = firsti
+            first = l
+            first = i
+        elif l > second :
+            second = l
+            secondi = i
+        i += 1
+    return secondi
+
+
+second_label = find_second_label(dataset2[0][0])
+epsilon = find_epsilon(second_label, dataset2[0][0])
