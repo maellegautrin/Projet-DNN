@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 
+# Define min search interval
+min_interval = 0.10
 
+download_dataset = True
 
 # Definition de l'ia
 # Merci à Felix
@@ -107,7 +110,7 @@ transform=transforms.Compose([
         transforms.Normalize((0.1307,), (0.3081,)),
         transforms.Lambda(lambda x: torch.flatten(x))
         ])
-dataset1 = datasets.MNIST('./MNIST', train=True, download=False,
+dataset1 = datasets.MNIST('./MNIST', train=True, download=download_dataset,
                     transform=transform)
 dataset2 = datasets.MNIST('./MNIST', train=False,
                     transform=transform)
@@ -123,7 +126,7 @@ print("Training the model...")
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print(f'Using gpu: {torch.cuda.is_available()}')
 model = LinearNet().to(device)
-#model.train_model(train_loader, 2, device)
+model.train_model(train_loader, 2, device)
 
 print("Testing the model...")
 model.test_model(test_loader)
@@ -208,7 +211,8 @@ def distance(x,y):
 
 
 def find_epsilon(label,x_star) :
-    epsilon = -0.1
+
+    epsilon = -min_interval
     is_sat = False
 
 
@@ -221,7 +225,7 @@ def find_epsilon(label,x_star) :
 
     print("find epsilon")
     while not(is_sat):
-        epsilon += 0.1
+        epsilon += min_interval
         print(f"test: {epsilon}")
         solver.add(distance(x_star,x_var) < epsilon)
         is_sat = solver.check() == sat
