@@ -38,6 +38,6 @@ première exécution du programme).
 Il semble que z3 soit vraiment lent, le cas avec epsilon < 0,
 dans la formule du inf, est très long.
 
-Mais normalement le programme effectue bien la tache demande
+Mais normalement le programme effectue bien la tâche demandé
 
 

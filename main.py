@@ -186,8 +186,6 @@ def get_contraint(x_var, label):
             solver.add(Implies(y[i][j] > 0, x[i][j] == y[i][j]), Implies(y[i][j] <= 0, x[i][j] == 0) )
 
     def c_out(label):
-        print(label)
-        print(len(x[n-1]))
         for k in range(s[-1]) :
             if k != label :
                 solver.add(x[n-1][k] <= x[n-1][label])
